@@ -57,12 +57,17 @@ export class BackendError extends Error {
   }
 }
 
-/** Wails puts the marshalled Go error in `cause`; keep its code. */
+/**
+ * Wails puts the marshalled Go error in `cause`; keep its code. The Android
+ * transport drops `cause` and sends only the text, so fall back to the
+ * "[code]" suffix that Go's GameError.Error() appends.
+ */
 function errorCode(e: unknown): string {
   const cause = (e as { cause?: unknown })?.cause;
   const c = typeof cause === "string" ? safeParse(cause) : cause;
   const code = (c as { code?: unknown } | undefined)?.code;
-  return typeof code === "string" ? code : "generic";
+  if (typeof code === "string") return code;
+  return /\[([a-z_]+)\]\s*$/.exec(errorMessage(e))?.[1] ?? "generic";
 }
 
 function safeParse(s: string): unknown {

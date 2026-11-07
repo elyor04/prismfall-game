@@ -70,6 +70,23 @@ wails3 task android:package:fat  # arm64 + x86_64 (runs on emulators)
 wails3 task android:bundle       # .aab for Google Play
 ```
 
-iOS builds need a Mac with Xcode (`wails3 task ios:...`).
-
 Android release builds are signed with the debug key unless `ANDROID_KEYSTORE_FILE`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` and `ANDROID_KEY_PASSWORD` are set. That's fine for sideloading, but Google Play will reject it.
+
+### macOS and iOS
+
+These need a Mac with Xcode.
+
+```bash
+wails3 task darwin:package             # bin/prismfall.app, arm64, ad-hoc signed
+wails3 task darwin:package:universal   # same, arm64 + amd64
+wails3 task ios:package                # bin/prismfall.app for the iOS Simulator (iOS 15+)
+wails3 task ios:deploy-simulator       # package, install and launch on the booted simulator
+```
+
+Both packages are written to `bin/prismfall.app`, so move one aside before building the other platform.
+
+The first macOS build in a fresh clone regenerates `build/darwin/icons.icns`, `build/darwin/Assets.car` and `build/windows/icon.ico` from `build/appicon.icon`, which still holds the Wails template icon. The committed files are the real Prismfall icons, so restore them with `git checkout -- build/darwin/icons.icns build/darwin/Assets.car build/windows/icon.ico`. Task caches the checksum in `.task/`, so later builds leave them alone.
+
+`build/ios/xcode/` is regenerated from `build/config.yml` and `build/appicon.png` on every iOS build and isn't committed.
+
+A real iPhone needs real signing and a provisioning profile: `wails3 task ios:package:ipa IOS_PLATFORM=device CODESIGN_IDENTITY="Apple Development: …" PROVISIONING_PROFILE=path/to/profile.mobileprovision`, or `wails3 task ios:xcode` to let Xcode manage signing.

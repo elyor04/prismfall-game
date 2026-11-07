@@ -70,6 +70,30 @@ wails3 task android:package:fat  # arm64 + x86_64 (runs on emulators)
 wails3 task android:bundle       # .aab for Google Play
 ```
 
-iOS builds need a Mac with Xcode (`wails3 task ios:...`).
-
 Android release builds are signed with the debug key unless `ANDROID_KEYSTORE_FILE`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` and `ANDROID_KEY_PASSWORD` are set. That's fine for sideloading, but Google Play will reject it.
+
+### macOS and iOS
+
+These need a Mac with Xcode.
+
+```bash
+wails3 task darwin:package             # bin/prismfall.app, arm64, ad-hoc signed
+wails3 task darwin:package:universal   # same, arm64 + amd64
+wails3 task darwin:package:dmg         # bin/prismfall.dmg installer
+wails3 task ios:package                # bin/prismfall.app for the iOS Simulator (iOS 15+)
+wails3 task ios:deploy-simulator       # package, install and launch on the booted simulator
+```
+
+Both packages are written to `bin/prismfall.app`, so move one aside before building the other platform.
+
+The macOS icons (`build/darwin/icons.icns` and `Assets.car`) are compiled from `build/appicon.icon`. Its only layer is a full-bleed copy of `build/appicon.png`, the same artwork as the Windows and Android icons. After changing `appicon.png`, refresh that layer, then rebuild the icons. The icon task also rewrites `build/windows/icon.ico`.
+
+```bash
+magick \( build/appicon.png -resize 135% -gravity center -extent 1024x1024 -blur 0x24 -background black -alpha remove \) \
+  build/appicon.png -gravity center -composite -alpha off build/appicon.icon/Assets/appicon.png
+wails3 task common:generate:icons
+```
+
+`build/ios/xcode/` is regenerated from `build/config.yml` and `build/appicon.png` on every iOS build and isn't committed.
+
+A real iPhone needs real signing and a provisioning profile: `wails3 task ios:package:ipa IOS_PLATFORM=device CODESIGN_IDENTITY="Apple Development: …" PROVISIONING_PROFILE=path/to/profile.mobileprovision`, or `wails3 task ios:xcode` to let Xcode manage signing.
